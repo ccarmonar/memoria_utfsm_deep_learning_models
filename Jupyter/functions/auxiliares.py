@@ -18,7 +18,7 @@ from ast import literal_eval
 import time
 import sys
 import os
-
+from scipy.signal import convolve2d
 
 def PaddingSameSize(matrix,padd_type='constant',constant_value=0):
     length = np.array([len(matrix[i]) for i in range(len(matrix))])
@@ -115,6 +115,42 @@ def StandardSize_Padding(matrix,num_standard_rows,num_standard_columns):
             padd = tp_matrix[i]
             padd_rows.append(padd)
     return np.asarray(padd_rows, dtype=np.float32).T
+
+
+
+def KernelSize(num_out_r,num_out_c,num_inp_r,num_inp_c):
+    kernel_rows = num_inp_r - num_out_r + 1
+    kernel_cols = num_inp_c - num_out_c + 1
+    return kernel_rows, kernel_cols
+
+def StandardSize_InitialConvolution(matrix,num_standard_rows,num_standard_columns):
+    num_inp_rows, num_inp_columns = matrix.shape
+    kernel_rows, kernel_cols = KernelSize(num_standard_rows,num_standard_columns,num_inp_rows,num_inp_columns)
+    kernel = np.ones((kernel_rows,kernel_cols))
+    kernel /= kernel.size
+    new_array = convolve2d(matrix, kernel, mode='valid')
+    return new_array
+
+def StandardSize(matrix,num_standard_rows,num_standard_columns):
+    num_inp_rows, num_inp_columns = matrix.shape
+    if num_inp_rows > num_standard_rows:
+        if num_inp_columns >= num_standard_columns:
+            new_array = StandardSize_InitialConvolution(matrix,num_standard_rows,num_standard_columns)
+        else:
+            new_array = StandardSize_Padding(matrix,num_standard_rows,num_standard_columns)
+            new_array = StandardSize_InitialConvolution(new_array,num_standard_rows,num_standard_columns)
+    elif num_inp_columns >  num_standard_columns:
+        if num_inp_rows >= num_standard_rows:
+            new_array = StandardSize_InitialConvolution(matrix,num_standard_rows,num_standard_columns)
+        else:
+            new_array = StandardSize_Padding(matrix,num_standard_rows,num_standard_columns)
+            new_array = StandardSize_InitialConvolution(new_array,num_standard_rows,num_standard_columns)
+    else:
+        new_array = StandardSize_Padding(matrix,num_standard_rows,num_standard_columns)
+    return new_array
+    
+    
+    
     
     
 def CNN_Features_Format(numpy_array):
@@ -143,3 +179,5 @@ def batch_format(X_train, y_train, n=1):
     for y in batch(y_train, n):
         batches["labels"].append(y)
     return batches
+
+

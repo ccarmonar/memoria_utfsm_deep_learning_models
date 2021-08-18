@@ -127,3 +127,8 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+Jupyter/dataset/
+Jupyter/pytorch_tutorial/
+Jupyter/testeo/
+
