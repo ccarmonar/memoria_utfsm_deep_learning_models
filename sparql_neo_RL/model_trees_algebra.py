@@ -29,6 +29,7 @@ print(f"IS CUDA AVAILABLE: {CUDA}")
 
 
 def _nn_path(base):
+    print(base)
     return os.path.join(base, "nn_weights")
 
 
@@ -176,7 +177,9 @@ class NeoRegression:
                  tree_activation_dense=nn.LeakyReLU,
                  ignore_first_aec_data=18,
                  start_history_from_epoch=2,
-                 batch_size = 64
+                 batch_size = 64,
+                 NeoNetValues_filename=None,
+                 model = None
                  ):
         #print("NeoRegression, __init__ method active")
         if tree_units_dense is None:
@@ -196,7 +199,7 @@ class NeoRegression:
             assert aec['aec_file'] is not None, "If train_aec is True, must define aec_file: path"
             assert (isinstance(aec['aec_epochs'], int) and aec[
                 'aec_epochs'] > 0), "If train_aec is True, must define aec_epochs: int"
-        self.net = None
+        self.net = model
         self.verbose = verbose
         self.train_aec = aec['train_aec']
         self.aec_file = aec['aec_file']
@@ -245,6 +248,7 @@ class NeoRegression:
         }
         self.maxcardinality = maxcardinality
         self.batch_size = batch_size
+        self.NeoNetValues_filename = NeoNetValues_filename
     def log(self, *args):
         print("NeoRegression, log method active")
         if self.verbose:
@@ -317,6 +321,8 @@ class NeoRegression:
         os.makedirs(path, exist_ok=True)
 
         torch.save(self.net.state_dict(), _nn_path(path))
+        print(path)
+        print(_nn_path(path))
         with open(_y_transform_path(path), "wb") as f:
             joblib.dump(self.pipeline, f)
         with open(_x_transform_path(path), "wb") as f:
@@ -426,6 +432,24 @@ class NeoRegression:
             activation_tree=self.tree_activation_tree,
             activation_dense=self.tree_activation_dense
         )
+        
+        print("NeoNetValues_filename", self.NeoNetValues_filename)
+        neo_dict = {
+            "io_dim" : str(io_dim),
+            "query_input_size" : str(self.query_input_size),
+            "query_hidden_inputs" : str(self.query_hidden_inputs),
+            "query_output" : str(self.query_output),
+            "tree_units" : str(self.tree_units),
+            "tree_units_dense" : str(self.tree_units_dense),
+            "activation_tree" : str(self.tree_activation_tree),
+            "activation_dense" : str(self.tree_activation_dense)
+        }
+        
+        neonet_file = open(self.NeoNetValues_filename+".txt", "w")
+        neonet_file.write(str(neo_dict))
+        neonet_file.close()
+        
+        
         if CUDA:
             self.net = self.net.cuda()
 
